@@ -43,22 +43,25 @@ export default function LoginPage() {
           Staff sign in
         </h2>
 
-        <p className="mt-1 mb-6 text-sm text-slate-500">
+        <p className="mb-6 mt-1 text-sm text-slate-500">
           Sign in to manage customer inquiries.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Email address */}
           <div>
             <label
               htmlFor="email"
               className="mb-2 block text-sm font-medium text-slate-700"
             >
-              Email address
+              Email address <span className="text-red-500">*</span>
             </label>
 
             <input
               id="email"
+              name="email"
               type="email"
+              required
               autoComplete="username"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
@@ -67,17 +70,20 @@ export default function LoginPage() {
             />
           </div>
 
+          {/* Password */}
           <div>
             <label
               htmlFor="password"
               className="mb-2 block text-sm font-medium text-slate-700"
             >
-              Password
+              Password <span className="text-red-500">*</span>
             </label>
 
             <input
               id="password"
+              name="password"
               type="password"
+              required
               autoComplete="current-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
@@ -86,6 +92,7 @@ export default function LoginPage() {
             />
           </div>
 
+          {/* Error message */}
           {error && (
             <p
               role="alert"
@@ -104,6 +111,10 @@ export default function LoginPage() {
         </form>
 
         <p className="mt-6 text-center text-xs text-slate-400">
+          <span className="text-red-500">*</span> Required fields
+        </p>
+
+        <p className="mt-2 text-center text-xs text-slate-400">
           Internal staff portal
         </p>
       </section>
