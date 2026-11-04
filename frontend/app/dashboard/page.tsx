@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type InquiryStatus = "New" | "In Progress" | "Resolved";
 
@@ -15,14 +15,49 @@ type Inquiry = {
   date: string;
 };
 
-const API_URL = "http://localhost:4000/api";
+const initialInquiries: Inquiry[] = [
+  {
+    id: 1001,
+    customer: "Amara Perera",
+    contact: "amara@example.com",
+    subject: "Payment issue",
+    description: "A payment was deducted but not reflected in the account.",
+    status: "New",
+    date: "2026-10-28",
+  },
+  {
+    id: 1002,
+    customer: "Kasun Silva",
+    contact: "0771234567",
+    subject: "Account access",
+    description: "Unable to access the customer account.",
+    status: "In Progress",
+    date: "2026-10-27",
+  },
+  {
+    id: 1003,
+    customer: "Nethmi Fernando",
+    contact: "nethmi@example.com",
+    subject: "Statement request",
+    description: "Requested a copy of the latest account statement.",
+    status: "Resolved",
+    date: "2026-10-26",
+  },
+  {
+    id: 1004,
+    customer: "Ravindu Jayasuriya",
+    contact: "0719876543",
+    subject: "Incorrect details",
+    description: "The contact details on the account need to be checked.",
+    status: "New",
+    date: "2026-10-25",
+  },
+];
 
 export default function DashboardPage() {
-  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [inquiries, setInquiries] = useState<Inquiry[]>(initialInquiries);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [isLoading, setIsLoading] = useState(true);
-  const [apiError, setApiError] = useState("");
 
   const [showForm, setShowForm] = useState(false);
   const [customer, setCustomer] = useState("");
@@ -30,24 +65,6 @@ export default function DashboardPage() {
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
   const [formError, setFormError] = useState("");
-
-  useEffect(() => {
-    async function loadInquiries() {
-      try {
-        const response = await fetch(`${API_URL}/inquiries`);
-        if (!response.ok) {
-          throw new Error("Failed to load inquiries.");
-        }
-        setInquiries(await response.json());
-      } catch {
-        setApiError("Unable to load inquiries. Please try again.");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    void loadInquiries();
-  }, []);
 
   const filteredInquiries = inquiries.filter((inquiry) => {
     const searchText = search.toLowerCase().trim();
@@ -76,29 +93,15 @@ export default function DashboardPage() {
     (inquiry) => inquiry.status === "Resolved"
   ).length;
 
-  async function updateStatus(id: number, status: InquiryStatus) {
-    setApiError("");
-    try {
-      const response = await fetch(`${API_URL}/inquiries/${id}/status`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
-      if (!response.ok) {
-        throw new Error("Failed to update inquiry status.");
-      }
-      const updatedInquiry: Inquiry = await response.json();
-      setInquiries((current) =>
-        current.map((inquiry) =>
-          inquiry.id === id ? updatedInquiry : inquiry
-        )
-      );
-    } catch {
-      setApiError("Unable to update the inquiry status. Please try again.");
-    }
+  function updateStatus(id: number, status: InquiryStatus) {
+    setInquiries((current) =>
+      current.map((inquiry) =>
+        inquiry.id === id ? { ...inquiry, status } : inquiry
+      )
+    );
   }
 
-  async function handleCreateInquiry(event: React.FormEvent<HTMLFormElement>) {
+  function handleCreateInquiry(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError("");
 
@@ -112,27 +115,17 @@ export default function DashboardPage() {
       return;
     }
 
-    try {
-      const response = await fetch(`${API_URL}/inquiries`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customer,
-          contact,
-          subject,
-          description,
-        }),
-      });
-      if (!response.ok) {
-        throw new Error("Failed to create inquiry.");
-      }
-      const newInquiry: Inquiry = await response.json();
-      setInquiries((current) => [newInquiry, ...current]);
-    } catch {
-      setFormError("Unable to create the inquiry. Please try again.");
-      return;
-    }
+    const newInquiry: Inquiry = {
+      id: Math.max(1000, ...inquiries.map((inquiry) => inquiry.id)) + 1,
+      customer: customer.trim(),
+      contact: contact.trim(),
+      subject: subject.trim(),
+      description: description.trim(),
+      status: "New",
+      date: new Date().toISOString().slice(0, 10),
+    };
 
+    setInquiries((current) => [newInquiry, ...current]);
     setSearch("");
     setStatusFilter("All");
     setCustomer("");
@@ -168,12 +161,6 @@ export default function DashboardPage() {
             View and manage customer inquiries in one place.
           </p>
         </div>
-
-        {apiError && (
-          <p role="alert" className="mb-6 rounded-lg bg-red-50 p-3 text-sm text-red-700">
-            {apiError}
-          </p>
-        )}
 
         {/* Summary cards */}
         <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -387,13 +374,7 @@ export default function DashboardPage() {
               </thead>
 
               <tbody className="divide-y divide-slate-100">
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-10 text-center text-slate-500">
-                      Loading inquiries...
-                    </td>
-                  </tr>
-                ) : filteredInquiries.map((inquiry) => (
+                {filteredInquiries.map((inquiry) => (
                   <tr
                     key={inquiry.id}
                     className="transition hover:bg-slate-50"

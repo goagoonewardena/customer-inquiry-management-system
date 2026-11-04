@@ -6,9 +6,9 @@ recording, searching, and tracking customer inquiries.
 ## Technology
 
 - **Frontend:** Next.js, React, TypeScript, Tailwind CSS
-- **Backend:** Java 17, Spring Boot
+- **Backend:** Node.js, Express, TypeScript
 - **Database:** PostgreSQL
-- **Validation:** Jakarta Bean Validation
+- **Validation:** Zod
 
 ## Current functionality
 
@@ -17,20 +17,21 @@ recording, searching, and tracking customer inquiries.
 - Filter inquiries by `New`, `In Progress`, or `Resolved`
 - Create an inquiry with required customer, contact, subject, and description
 - Update an inquiry status
-- PostgreSQL schema and Spring Boot REST API for inquiry reads, creates, searches, and status updates
+- PostgreSQL schema and Express API for inquiry reads, creates, and status updates
 - PostgreSQL-backed health check at `GET /api/health`
 
-> **Implementation status:** Authentication, backend-enforced access control,
-> automated tests, and the final assessment documentation are still to be
-> completed.
+> **Implementation status:** The current dashboard still uses in-memory sample
+> data and does not yet call the backend API. Authentication, backend-enforced
+> access control, automated tests, and the final assessment documentation are
+> still to be completed.
 
 ## Project structure
 
 ```text
 backend/
   database/schema.sql    PostgreSQL schema
-  pom.xml                Maven and Spring Boot configuration
-  src/main/java/         Spring Boot REST API, services, and PostgreSQL access
+  src/db.ts              PostgreSQL connection pool
+  src/server.ts          Express API
 frontend/
   app/page.tsx           Sign-in screen placeholder
   app/dashboard/         Inquiry dashboard
@@ -39,8 +40,7 @@ frontend/
 
 ## Prerequisites
 
-- Java 17 or later
-- Maven 3.9 or later
+- Node.js 20 or later
 - PostgreSQL 14 or later
 
 ## Database setup
@@ -51,27 +51,29 @@ Create a PostgreSQL database named `inquiro_tracker`, then run:
 psql -U postgres -d inquiro_tracker -f backend/database/schema.sql
 ```
 
-The Spring Boot backend uses these environment variables. Defaults are shown
-where available:
+The backend uses these environment variables. Defaults are shown where
+available:
 
 ```text
 PORT=4000
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=inquiro_tracker
-DB_USER=postgres
+DB_NAME=your_DB_NAME
+DB_USER=your_DB_USER
 DB_PASSWORD=your-postgres-password
 ```
 
-Set them in the shell environment before starting the backend, or configure
-them in your IDE run configuration.
+Place them in `backend/.env`.
 
 ## Run locally
 
-Install frontend dependencies:
+Install dependencies:
 
 ```bash
-cd frontend
+cd backend
+npm install
+
+cd ../frontend
 npm install
 ```
 
@@ -79,7 +81,7 @@ Start the backend in one terminal:
 
 ```bash
 cd backend
-mvn spring-boot:run
+npm run dev
 ```
 
 Start the frontend in another terminal:
@@ -128,7 +130,7 @@ The API validates required fields, length limits, inquiry IDs, and statuses.
 The remaining work required for the complete assessment submission is:
 
 - Add seeded staff authentication and enforce it in the backend
-- Add automated tests for the Spring Boot API and frontend
+- Connect the frontend dashboard to the Express API
 - Define and enforce inquiry ownership/access rules
 - Define status transition behavior, including stale data handling
 - Add loading, API failure, authentication failure, and record-not-found states
@@ -139,16 +141,5 @@ The remaining work required for the complete assessment submission is:
 
 ## Testing
 
-Run the backend tests with:
-
-```bash
-cd backend
-mvn test
-```
-
-Run the frontend lint check with:
-
-```bash
-cd frontend
-npm run lint
-```
+Automated assessment tests have not yet been added. Once implemented, the
+backend and frontend test commands will be documented here.
