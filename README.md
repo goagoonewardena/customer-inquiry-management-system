@@ -68,7 +68,9 @@ Place them in `backend/.env`.
 ## Run locally
 
 Install dependencies:
-
+wsl --status
+docker version
+docker compose version
 ```bash
 cd backend
 npm install
@@ -94,6 +96,19 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000).
 
 The API runs at [http://localhost:4000](http://localhost:4000).
+
+## Run with Docker
+
+Copy `.env.example` to `.env`, replace `DB_PASSWORD` with a strong local
+password, and start the services:
+
+```bash
+docker compose up --build
+```
+
+`.env` is ignored by Git and must not be committed. PostgreSQL is available
+only to the Docker services; the backend is exposed at port `4000` and the
+frontend at port `3000`.
 
 ## API endpoints
 
