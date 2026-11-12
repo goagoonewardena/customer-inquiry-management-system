@@ -1,0 +1,5 @@
+com\inquiro\InquiryController$Inquiry.class
+com\inquiro\InquiryController.class
+com\inquiro\InquiryApplication.class
+com\inquiro\InquiryController$CreateInquiry.class
+com\inquiro\InquiryController$StatusUpdate.class

@@ -6,7 +6,7 @@ recording, searching, and tracking customer inquiries.
 ## Technology
 
 - **Frontend:** Next.js, React, TypeScript, Tailwind CSS
-- **Backend:** Node.js, Express, TypeScript
+- **Backend:** Java 17, Spring Boot, JDBC
 - **Database:** PostgreSQL
 - **Validation:** Zod
 
@@ -17,7 +17,7 @@ recording, searching, and tracking customer inquiries.
 - Filter inquiries by `New`, `In Progress`, or `Resolved`
 - Create an inquiry with required customer, contact, subject, and description
 - Update an inquiry status
-- PostgreSQL schema and Express API for inquiry reads, creates, and status updates
+- PostgreSQL schema and Spring Boot API for inquiry reads, creates, and status updates
 - PostgreSQL-backed health check at `GET /api/health`
 
 > **Implementation status:** The current dashboard still uses in-memory sample
@@ -30,8 +30,8 @@ recording, searching, and tracking customer inquiries.
 ```text
 backend/
   database/schema.sql    PostgreSQL schema
-  src/db.ts              PostgreSQL connection pool
-  src/server.ts          Express API
+  pom.xml                Maven build configuration
+  src/main/java/         Spring Boot API
 frontend/
   app/page.tsx           Sign-in screen placeholder
   app/dashboard/         Inquiry dashboard
@@ -40,7 +40,8 @@ frontend/
 
 ## Prerequisites
 
-- Node.js 20 or later
+- Java 17 or later
+- Maven 3.9 or later
 - PostgreSQL 14 or later
 
 ## Database setup
@@ -67,23 +68,17 @@ Place them in `backend/.env`.
 
 ## Run locally
 
-Install dependencies:
-wsl --status
-docker version
-docker compose version
+Install frontend dependencies:
 ```bash
-cd backend
-npm install
-
-cd ../frontend
+cd frontend
 npm install
 ```
 
-Start the backend in one terminal:
+Start the backend in another terminal:
 
 ```bash
 cd backend
-npm run dev
+mvn spring-boot:run
 ```
 
 Start the frontend in another terminal:
