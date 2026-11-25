@@ -13,7 +13,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin
 public class InquiryController {
     private static final List<String> STATUSES = List.of("New", "In Progress", "Resolved");
     private final JdbcTemplate jdbcTemplate;

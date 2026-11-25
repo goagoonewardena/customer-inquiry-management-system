@@ -1,6 +1,6 @@
 services:
   database:
-    image: your_docker_image_name
+    image: postgres:17
     environment:
       POSTGRES_DB: ${DB_NAME:?Set DB_NAME in .env}
       POSTGRES_USER: ${DB_USER:?Set DB_USER in .env}
@@ -17,7 +17,7 @@ services:
   backend:
     build: ./backend
     ports:
-      - "4000:4000"
+      - "127.0.0.1:4000:4000"
     environment:
       PORT: 4000
       DB_HOST: database
@@ -25,6 +25,10 @@ services:
       DB_NAME: ${DB_NAME:?Set DB_NAME in .env}
       DB_USER: ${DB_USER:?Set DB_USER in .env}
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-true}
+      REQUIRE_HTTPS: ${REQUIRE_HTTPS:-true}
+      STAFF_SIGNUP_INVITE_CODE: ${STAFF_SIGNUP_INVITE_CODE:-}
+      TRUSTED_PROXY_ADDRESSES: ${TRUSTED_PROXY_ADDRESSES:-}
     depends_on:
       database:
         condition: service_healthy

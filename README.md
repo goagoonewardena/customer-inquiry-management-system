@@ -17,13 +17,14 @@ recording, searching, and tracking customer inquiries.
 - Filter inquiries by `New`, `In Progress`, or `Resolved`
 - Create an inquiry with required customer, contact, subject, and description
 - Update an inquiry status
+- Staff self-registration and sign-in with hashed passwords and expiring sessions
 - PostgreSQL schema and Spring Boot API for inquiry reads, creates, and status updates
 - PostgreSQL-backed health check at `GET /api/health`
 
 > **Implementation status:** The current dashboard still uses in-memory sample
-> data and does not yet call the backend API. Authentication, backend-enforced
-> access control, automated tests, and the final assessment documentation are
-> still to be completed.
+> data and does not yet call the inquiry API. Account registration and sign-in
+> are connected to the backend; the dashboard requires an authenticated staff
+> session.
 
 ## Project structure
 
@@ -46,14 +47,10 @@ frontend/
 
 ## Database setup
 
-Create a PostgreSQL database named `inquiro_tracker`, then run:
+Create a PostgreSQL database named `inquiro_tracker`. The backend applies
+`backend/database/schema.sql` automatically at startup.
 
-```bash
-psql -U postgres -d inquiro_tracker -f backend/database/schema.sql
-```
-
-The backend uses these environment variables. Defaults are shown where
-available:
+The backend reads these environment variables:
 
 ```text
 PORT=4000
@@ -64,7 +61,36 @@ DB_USER=your_DB_USER
 DB_PASSWORD=your-postgres-password
 ```
 
-Place them in `backend/.env`.
+Spring Boot does not load a `.env` file by itself. In PowerShell, set the
+variables in the same terminal before starting the backend:
+
+```powershell
+$env:DB_HOST = "localhost"
+$env:DB_PORT = "5432"
+$env:DB_NAME = "inquiro_tracker"
+$env:DB_USER = "postgres"
+$env:DB_PASSWORD = Read-Host "PostgreSQL password"
+$env:AUTH_COOKIE_SECURE = "false"
+$env:REQUIRE_HTTPS = "false"
+$env:STAFF_SIGNUP_INVITE_CODE = Read-Host "Staff invitation code"
+Set-Location backend
+mvn spring-boot:run
+```
+
+Choose a strong invitation code and provide it only to staff who may register.
+The backend rejects signup if no code is configured or if the submitted code
+does not match. Existing accounts are unapproved after the schema update; an
+administrator can approve a known account directly in PostgreSQL:
+
+```sql
+UPDATE staff_users SET approved = TRUE
+WHERE LOWER(email) = LOWER('staff@example.com');
+```
+
+For local HTTP development, set both `AUTH_COOKIE_SECURE` and `REQUIRE_HTTPS`
+to `false`. Keep both `true` when the backend is served over HTTPS. Behind a
+TLS-terminating proxy, set `TRUSTED_PROXY_ADDRESSES` to the proxy's exact IP
+address(es), and configure the proxy to overwrite `X-Forwarded-Proto`.
 
 ## Run locally
 
@@ -74,17 +100,10 @@ cd frontend
 npm install
 ```
 
-Start the backend in another terminal:
+In another terminal, start the frontend:
 
-```bash
-cd backend
-mvn spring-boot:run
-```
-
-Start the frontend in another terminal:
-
-```bash
-cd frontend
+```powershell
+Set-Location frontend
 npm run dev
 ```
 
@@ -94,8 +113,11 @@ The API runs at [http://localhost:4000](http://localhost:4000).
 
 ## Run with Docker
 
-Copy `.env.example` to `.env`, replace `DB_PASSWORD` with a strong local
-password, and start the services:
+For local HTTP development, create a root `.env` file with `DB_NAME`,
+`DB_USER`, `DB_PASSWORD`, `STAFF_SIGNUP_INVITE_CODE`,
+`AUTH_COOKIE_SECURE=false`, and `REQUIRE_HTTPS=false`, then start the services.
+Use a strong private invitation code, and set `AUTH_COOKIE_SECURE=true` and
+`REQUIRE_HTTPS=true` when serving over HTTPS.
 
 ```bash
 docker compose up --build
@@ -110,9 +132,22 @@ frontend at port `3000`.
 | Method | Endpoint | Purpose |
 |---|---|---|
 | `GET` | `/api/health` | Check API and database connectivity |
+| `POST` | `/api/auth/signup` | Create a staff account and sign in |
+| `POST` | `/api/auth/login` | Sign in to an existing staff account |
+| `GET` | `/api/auth/me` | Check the current staff session |
+| `POST` | `/api/auth/logout` | End the current staff session |
 | `GET` | `/api/inquiries` | List inquiries |
 | `POST` | `/api/inquiries` | Create an inquiry |
 | `PATCH` | `/api/inquiries/:id/status` | Update an inquiry status |
+
+Signup accepts JSON containing `email`, `password`, and `inviteCode`; login
+accepts `email` and `password`. Passwords must be at least 8 characters; the
+API stores BCrypt hashes and issues an HTTP-only, 8-hour session cookie. Signup is disabled until
+`STAFF_SIGNUP_INVITE_CODE` is set. Session cookies are `Secure` by default and
+the API rejects non-HTTPS requests by default. Set `AUTH_COOKIE_SECURE=false`
+and `REQUIRE_HTTPS=false` only for local HTTP development. The frontend
+defaults to `http://localhost:4000/api`; set `NEXT_PUBLIC_API_URL` if the API
+is hosted elsewhere.
 
 ### Create inquiry example
 

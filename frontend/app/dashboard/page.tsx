@@ -1,7 +1,9 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { apiErrorMessage, apiFetch } from "../../lib/api";
 
 type InquiryStatus = "New" | "In Progress" | "Resolved";
 
@@ -55,6 +57,11 @@ const initialInquiries: Inquiry[] = [
 ];
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const [authStatus, setAuthStatus] = useState<
+    "checking" | "authenticated" | "error"
+  >("checking");
+  const [authError, setAuthError] = useState("");
   const [inquiries, setInquiries] = useState<Inquiry[]>(initialInquiries);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -65,6 +72,38 @@ export default function DashboardPage() {
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
   const [formError, setFormError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkAuthentication() {
+      try {
+        const response = await apiFetch("/auth/me");
+        if (response.status === 401) {
+          router.replace("/");
+          return;
+        }
+        if (!response.ok) {
+          throw new Error(await apiErrorMessage(response, "Could not verify sign-in."));
+        }
+        if (!cancelled) {
+          setAuthStatus("authenticated");
+        }
+      } catch {
+        if (!cancelled) {
+          setAuthError(
+            "Could not verify your sign-in. Make sure the backend and database are running, then refresh."
+          );
+          setAuthStatus("error");
+        }
+      }
+    }
+
+    void checkAuthentication();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
 
   const filteredInquiries = inquiries.filter((inquiry) => {
     const searchText = search.toLowerCase().trim();
@@ -101,6 +140,20 @@ export default function DashboardPage() {
     );
   }
 
+  async function handleSignOut() {
+    setAuthError("");
+    try {
+      const response = await apiFetch("/auth/logout", { method: "POST" });
+      if (!response.ok) {
+        setAuthError(await apiErrorMessage(response, "Could not sign out."));
+        return;
+      }
+      router.replace("/");
+    } catch {
+      setAuthError("Could not reach the authentication service to sign out.");
+    }
+  }
+
   function handleCreateInquiry(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError("");
@@ -135,6 +188,34 @@ export default function DashboardPage() {
     setShowForm(false);
   }
 
+  if (authStatus !== "authenticated") {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-100 px-6 text-center">
+        <div className="max-w-md rounded-xl bg-white p-6 shadow-sm">
+          <p className="font-semibold text-slate-800">
+            {authStatus === "checking"
+              ? "Verifying your sign-in..."
+              : "Unable to open the dashboard"}
+          </p>
+          {authError && (
+            <>
+              <p role="alert" className="mt-2 text-sm text-red-700">
+                {authError}
+              </p>
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="mt-4 rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700"
+              >
+                Retry
+              </button>
+            </>
+          )}
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-slate-100 text-slate-900">
       {/* Header */}
@@ -147,13 +228,22 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <span className="w-fit rounded-full bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700">
-            Staff Dashboard
-          </span>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="w-fit rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            Sign out
+          </button>
         </div>
       </header>
 
       <section className="mx-auto max-w-7xl px-6 py-8">
+        {authError && (
+          <p role="alert" className="mb-4 text-sm text-red-700">
+            {authError}
+          </p>
+        )}
         {/* Page heading */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold">Inquiry Dashboard</h2>
